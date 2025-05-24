@@ -1,6 +1,6 @@
-# README.md
+# Backend .NET Interview Questions
 
-## دليل الأسئلة والأجوبة - .NET Interview questions
+## دليل الأسئلة والأجوبة - Dot NET Development
 
 ---
 
@@ -650,31 +650,31 @@ var users = context.Users.AsNoTracking().ToList(); // غير مُتتبع
 
 ## 🌐 ثالثاً: ASP.NET Core / MVC
 
-### 1. ما الفرق بين ASP.NET MVC و ASP.NET Core؟
+### ما الفرق بين ASP.NET MVC و ASP.NET Core؟
 
-**ASP.NET MVC:**
+**ASP.NET MVC (.NET Framework):**
 
-- جزء من .NET Framework
 - يعمل فقط على Windows
-- مرتبط بـ IIS
-- أقل في الأداء
+- مبني على .NET Framework
+- أبطأ في الأداء
+- IIS dependency
+- System.Web dependency
 
 **ASP.NET Core:**
 
-- مبني على .NET Core/.NET 5+
 - متعدد المنصات (Windows, Linux, macOS)
-- خفيف وسريع
+- مبني على .NET Core/.NET 5+
+- أداء عالي وسريع
+- مستقل عن IIS
 - مفتوح المصدر
-- يدعم Cloud-native applications
-- Dependency Injection مدمج بشكل افتراضي
+- Built-in Dependency Injection
+- Unified MVC and Web API
 
----
+### ما هو الـ Middleware وكيف أكتبه؟
 
-### 2. ما هو الـ Middleware وكيف أكتبه؟
+**Middleware:** مكونات تتعامل مع HTTP requests و responses في pipeline معين.
 
-**الـ Middleware** هو مكونات تشكل pipeline لمعالجة HTTP requests والاستجابة لها.
-
-### كتابة Middleware مخصص:
+**كتابة Middleware بسيط:**
 
 ```csharp
 public class CustomMiddleware
@@ -688,57 +688,102 @@ public class CustomMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // معالجة قبل Request
-        Console.WriteLine("Before request");
+        // عمل شيء قبل المرور للـ middleware التالي
+        Console.WriteLine("Before next middleware");
 
         await _next(context); // استدعاء الـ middleware التالي
 
-        // معالجة بعد Response
-        Console.WriteLine("After response");
+        // عمل شيء بعد العودة من الـ middleware التالي
+        Console.WriteLine("After next middleware");
     }
 }
 
-// في Program.cs
+// التسجيل في Program.cs
 app.UseMiddleware<CustomMiddleware>();
 ```
 
----
+**استخدام الـ Middleware:**
 
-## 3. ما الفرق بين Middleware و Filter؟
+```csharp
+// في Program.cs
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
 
-| Middleware                    | Filter                           |
-| ----------------------------- | -------------------------------- |
-| يعمل على مستوى Application    | يعمل على مستوى Controller/Action |
-| يمكنه التعامل مع جميع الطلبات | يعمل فقط مع MVC requests         |
-| ترتيب التنفيذ حسب الإضافة     | ترتيب محدد مسبقاً                |
-| يمكنه قطع Pipeline            | لا يمكنه قطع Pipeline بالكامل    |
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
-**أنواع Filters:**
+app.Run();
+```
 
-- Authorization Filters
-- Action Filters
-- Result Filters
-- Exception Filters
+### ما الفرق بين Middleware و Filter؟
 
----
+**Middleware:**
 
-## 4. ما هو الـ Request Lifecycle في MVC؟
+- يعمل على مستوى Application
+- يتعامل مع جميع الـ requests
+- ترتيب التنفيذ مهم جداً
+- يمكنه منع وصول الـ request للـ MVC pipeline
+
+**Filter:**
+
+- يعمل على مستوى MVC فقط
+- يتعامل مع Actions محددة
+- أنواع مختلفة (Authorization, Action, Result, Exception)
+- أكثر تخصصاً
+
+**أنواع الـ Filters:**
+
+```csharp
+// Authorization Filter
+public class CustomAuthorizationFilter : IAuthorizationFilter
+{
+    public void OnAuthorization(AuthorizationFilterContext context)
+    {
+        // التحقق من الصلاحيات
+    }
+}
+
+// Action Filter
+public class CustomActionFilter : IActionFilter
+{
+    public void OnActionExecuting(ActionExecutingContext context)
+    {
+        // قبل تنفيذ الـ Action
+    }
+
+    public void OnActionExecuted(ActionExecutedContext context)
+    {
+        // بعد تنفيذ الـ Action
+    }
+}
+```
+
+### ما هو الـ Request Lifecycle في MVC؟
+
+**المراحل بالترتيب:**
 
 1. **HTTP Request** يصل للخادم
-2. **Routing** يحدد Controller و Action
-3. **Controller Instantiation** إنشاء مثيل من Controller
-4. **Model Binding** ربط البيانات بالـ Model
-5. **Action Execution** تنفيذ الـ Action
-6. **Result Execution** تنفيذ النتيجة (View, JSON, etc.)
-7. **Response** إرسال الاستجابة للعميل
+2. **Middleware Pipeline** يعالج الـ request
+3. **Routing** يحدد الـ Controller والـ Action
+4. **Model Binding** يربط البيانات بالـ parameters
+5. **Authorization Filters** يتحقق من الصلاحيات
+6. **Action Filters** (OnActionExecuting)
+7. **Action Method** يتم تنفيذه
+8. **Action Filters** (OnActionExecuted)
+9. **Result Filters** (OnResultExecuting)
+10. **View** يتم إنشاؤه (إذا كان ViewResult)
+11. **Result Filters** (OnResultExecuted)
+12. **Response** يرسل للعميل
 
----
+### ما هو الـ Routing وما علاقة ترتيب الـ Middleware؟
 
-## 5. ما هو الـ Routing وما علاقة ترتيب الـ Middleware؟
+**Routing:** آلية تحديد أي Controller و Action سيتم استدعاؤهما بناءً على الـ URL.
 
-**الـ Routing** هو نظام توجيه الطلبات إلى Controllers و Actions المناسبة.
-
-### أنواع Routing:
+**أنواع الـ Routing:**
 
 ```csharp
 // Convention-based Routing
@@ -748,281 +793,443 @@ app.MapControllerRoute(
 
 // Attribute Routing
 [Route("api/[controller]")]
-[HttpGet("{id}")]
-public ActionResult Get(int id) { }
-```
-
-### ترتيب Middleware مهم:
-
-```csharp
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
-
-app.UseHttpsRedirection();    // 1
-app.UseStaticFiles();         // 2
-app.UseRouting();            // 3
-app.UseAuthentication();     // 4
-app.UseAuthorization();      // 5
-app.MapControllers();        // 6
-```
-
----
-
-## 6. ما الفرق بين ViewBag و ViewData و TempData؟
-
-| الخاصية   | ViewBag           | ViewData              | TempData              |
-| --------- | ----------------- | --------------------- | --------------------- |
-| النوع     | dynamic           | Dictionary            | Dictionary            |
-| النطاق    | Controller → View | Controller → View     | Request → Request     |
-| البقاء    | Request واحد      | Request واحد          | عدة Requests          |
-| الاستخدام | `ViewBag.Message` | `ViewData["Message"]` | `TempData["Message"]` |
-
-### مثال:
-
-```csharp
-// في Controller
-ViewBag.Title = "الصفحة الرئيسية";
-ViewData["Message"] = "مرحباً";
-TempData["Success"] = "تم الحفظ بنجاح";
-
-// في View
-<h1>@ViewBag.Title</h1>
-<p>@ViewData["Message"]</p>
-<div>@TempData["Success"]</div>
-```
-
----
-
-## 7. ما الطرق المتاحة لنقل البيانات من View إلى Controller؟
-
-1. **Model Binding**: ربط البيانات تلقائياً
-2. **Form Data**: بيانات النماذج
-3. **Query String**: معاملات URL
-4. **Route Data**: بيانات المسار
-5. **Request Body**: محتوى الطلب
-
-### مثال:
-
-```csharp
-[HttpPost]
-public ActionResult Create(UserModel model) // Model Binding
+public class UsersController : ControllerBase
 {
-    string name = Request.Form["Name"];      // Form Data
-    string id = Request.Query["id"];         // Query String
-    return View();
+    [HttpGet("{id}")]
+    public IActionResult GetUser(int id) { }
+
+    [HttpPost]
+    public IActionResult CreateUser([FromBody] User user) { }
 }
 ```
 
----
+**ترتيب الـ Middleware مهم:**
 
-## 8. ما هو الـ Ajax وكيف أستخدمه مع MVC؟
+```csharp
+app.UseHttpsRedirection();  // 1
+app.UseStaticFiles();       // 2
+app.UseRouting();           // 3 - يجب أن يكون قبل UseAuthorization
+app.UseAuthentication();    // 4
+app.UseAuthorization();     // 5 - يجب أن يكون بعد UseRouting
+app.MapControllers();       // 6
+```
 
-**AJAX** (Asynchronous JavaScript and XML) يسمح بإرسال طلبات غير متزامنة للخادم.
+### ما هو الفرق بين ViewBag و ViewData و TempData؟
 
-### مثال باستخدام jQuery:
+**ViewData:**
+
+- Dictionary من نوع ViewDataDictionary
+- Key-Value pairs
+- متاح فقط في الـ View الحالي
+- يتطلب Type Casting
+
+```csharp
+// في الـ Controller
+ViewData["Message"] = "Hello World";
+ViewData["Count"] = 10;
+
+// في الـ View
+<h1>@ViewData["Message"]</h1>
+<p>Count: @((int)ViewData["Count"])</p>
+```
+
+**ViewBag:**
+
+- Dynamic wrapper حول ViewData
+- أسهل في الاستخدام
+- لا يتطلب Type Casting
+- متاح فقط في الـ View الحالي
+
+```csharp
+// في الـ Controller
+ViewBag.Message = "Hello World";
+ViewBag.Count = 10;
+
+// في الـ View
+<h1>@ViewBag.Message</h1>
+<p>Count: @ViewBag.Count</p>
+```
+
+**TempData:**
+
+- يستخدم Session أو Cookies
+- متاح عبر Redirects
+- يتم حذفه بعد القراءة (Keep لمنع الحذف)
+- مناسب لرسائل النجاح/الخطأ
+
+```csharp
+// في الـ Controller
+TempData["Success"] = "User created successfully";
+return RedirectToAction("Index");
+
+// في الـ View التالي
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+```
+
+### ما الطرق المتاحة لنقل البيانات من View إلى Controller؟
+
+**1. Model Binding:**
+
+```csharp
+// POST Form
+[HttpPost]
+public IActionResult Create(User user)
+{
+    // الـ user يتم ملؤه تلقائياً من الـ Form
+}
+```
+
+**2. Query Parameters:**
+
+```csharp
+public IActionResult Search(string term, int page = 1)
+{
+    // /Search?term=john&page=2
+}
+```
+
+**3. Route Parameters:**
+
+```csharp
+[HttpGet("users/{id}")]
+public IActionResult GetUser(int id)
+{
+    // /users/123
+}
+```
+
+**4. Form Data:**
+
+```csharp
+[HttpPost]
+public IActionResult Submit(IFormCollection form)
+{
+    var value = form["fieldName"];
+}
+```
+
+**5. JSON Body:**
+
+```csharp
+[HttpPost]
+public IActionResult CreateUser([FromBody] User user)
+{
+    // JSON في الـ request body
+}
+```
+
+**6. Headers:**
+
+```csharp
+public IActionResult Index([FromHeader] string authorization)
+{
+    // من الـ HTTP headers
+}
+```
+
+### ما هو الـ Ajax وكيف أستخدمه مع MVC؟
+
+**Ajax:** تقنية لإرسال واستقبال البيانات بدون إعادة تحميل الصفحة.
+
+**باستخدام jQuery:**
 
 ```javascript
 $.ajax({
-  url: "/Home/GetData",
-  type: "GET",
-  dataType: "json",
-  success: function (data) {
-    console.log(data);
+  url: "/Users/Create",
+  type: "POST",
+  data: {
+    name: "John Doe",
+    email: "john@example.com",
+  },
+  success: function (result) {
+    alert("User created successfully");
   },
   error: function () {
-    alert("حدث خطأ");
+    alert("Error occurred");
   },
 });
 ```
 
-### في Controller:
+**في الـ Controller:**
 
 ```csharp
-[HttpGet]
-public JsonResult GetData()
+[HttpPost]
+public IActionResult Create(User user)
 {
-    var data = new { Message = "البيانات", Count = 10 };
-    return Json(data);
-}
-```
-
----
-
-## 9. ما هو الـ Identity وما علاقته بالـ Token؟
-
-**ASP.NET Identity** هو نظام إدارة المستخدمين والمصادقة.
-
-### الميزات:
-
-- إدارة المستخدمين
-- المصادقة والتفويض
-- إدارة الأدوار
-- كلمات المرور
-- المصادقة الخارجية
-
-### مع JWT Token:
-
-```csharp
-[HttpPost("login")]
-public async Task<IActionResult> Login(LoginModel model)
-{
-    var user = await _userManager.FindByEmailAsync(model.Email);
-    if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+    if (ModelState.IsValid)
     {
-        var token = GenerateJwtToken(user);
-        return Ok(new { Token = token });
+        // حفظ المستخدم
+        return Json(new { success = true, message = "User created" });
     }
-    return Unauthorized();
+    return Json(new { success = false, errors = ModelState.Values });
 }
 ```
 
----
+**باستخدام Fetch API:**
 
-## 10. ما هو الـ JWT Token ولماذا يُستخدم؟
+```javascript
+fetch("/Users/Create", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "John Doe",
+    email: "john@example.com",
+  }),
+})
+  .then((response) => response.json())
+  .then((data) => console.log(data));
+```
 
-**JWT (JSON Web Token)** هو معيار لنقل المعلومات بشكل آمن.
+### ما هو الـ Identity وما علاقته بالـ Token؟
 
-### المكونات:
+**ASP.NET Identity:** نظام إدارة المستخدمين والأدوار والمصادقة المدمج في ASP.NET.
 
-1. **Header**: نوع التوكن والخوارزمية
-2. **Payload**: البيانات (Claims)
-3. **Signature**: التوقيع للتحقق
+**المميزات:**
 
-### المزايا:
+- إدارة Users و Roles
+- Password hashing
+- Two-factor authentication
+- External login providers (Google, Facebook)
+- Claims-based authentication
 
-- لا حاجة لحفظ Session
-- يمكن التحقق منه محلياً
-- مناسب للـ APIs
-- يدعم Cross-domain
-
-### إنشاء JWT:
+**الإعداد:**
 
 ```csharp
-private string GenerateJwtToken(ApplicationUser user)
+// في Program.cs
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+// في Controller
+public class AccountController : Controller
+{
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly SignInManager<IdentityUser> _signInManager;
+
+    [HttpPost]
+    public async Task<IActionResult> Login(LoginViewModel model)
+    {
+        var result = await _signInManager.PasswordSignInAsync(
+            model.Email, model.Password, model.RememberMe, false);
+
+        if (result.Succeeded)
+        {
+            return RedirectToAction("Index", "Home");
+        }
+        return View(model);
+    }
+}
+```
+
+### ما هو الـ JWT Token ولماذا يُستخدم؟
+
+**JWT (JSON Web Token):** معيار لتمرير المعلومات بشكل آمن بين الأطراف.
+
+**التركيب:**
+
+- **Header:** نوع التوكن والخوارزمية
+- **Payload:** البيانات (Claims)
+- **Signature:** التوقيع للتحقق من صحة التوكن
+
+**المميزات:**
+
+- Stateless (لا يحتاج تخزين في الخادم)
+- Cross-domain authentication
+- Mobile-friendly
+- يحتوي على المعلومات المطلوبة
+
+**الإنشاء:**
+
+```csharp
+public string GenerateJwtToken(User user)
 {
     var tokenHandler = new JwtSecurityTokenHandler();
     var key = Encoding.ASCII.GetBytes(_secretKey);
+
     var tokenDescriptor = new SecurityTokenDescriptor
     {
         Subject = new ClaimsIdentity(new[]
         {
-            new Claim(ClaimTypes.Name, user.UserName),
-            new Claim(ClaimTypes.Email, user.Email)
+            new Claim("id", user.Id.ToString()),
+            new Claim("email", user.Email)
         }),
-        Expires = DateTime.UtcNow.AddHours(1),
-        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+        Expires = DateTime.UtcNow.AddDays(7),
+        SigningCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(key),
             SecurityAlgorithms.HmacSha256Signature)
     };
+
     var token = tokenHandler.CreateToken(tokenDescriptor);
     return tokenHandler.WriteToken(token);
 }
 ```
 
----
-
-## 11. ما الفرق بين Get، Post، Put، Delete في الـ API؟
-
-| HTTP Verb  | الغرض            | الاستخدام     | Idempotent |
-| ---------- | ---------------- | ------------- | ---------- |
-| **GET**    | استرجاع البيانات | قراءة الموارد | نعم        |
-| **POST**   | إنشاء جديد       | إضافة مورد    | لا         |
-| **PUT**    | تحديث كامل       | تعديل المورد  | نعم        |
-| **DELETE** | حذف              | إزالة المورد  | نعم        |
-
-### مثال:
+**الإعداد:**
 
 ```csharp
-[ApiController]
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+```
+
+### ما الفرق بين Get و Post و Put و Delete في الـ API؟
+
+**HTTP Methods:**
+
+**GET:**
+
+- للاستعلام عن البيانات
+- Idempotent (آمن للتكرار)
+- البيانات في الـ URL
+- يمكن حفظه في Cache
+
+```csharp
+[HttpGet("{id}")]
+public IActionResult GetUser(int id)
+{
+    var user = _userService.GetById(id);
+    return Ok(user);
+}
+```
+
+**POST:**
+
+- لإنشاء بيانات جديدة
+- ليس Idempotent
+- البيانات في الـ Body
+- لا يُحفظ في Cache
+
+```csharp
+[HttpPost]
+public IActionResult CreateUser([FromBody] User user)
+{
+    var createdUser = _userService.Create(user);
+    return CreatedAtAction(nameof(GetUser),
+        new { id = createdUser.Id }, createdUser);
+}
+```
+
+**PUT:**
+
+- لتحديث البيانات (Replace كامل)
+- Idempotent
+- يتطلب إرسال جميع الخصائص
+
+```csharp
+[HttpPut("{id}")]
+public IActionResult UpdateUser(int id, [FromBody] User user)
+{
+    if (id != user.Id) return BadRequest();
+
+    _userService.Update(user);
+    return NoContent();
+}
+```
+
+**DELETE:**
+
+- لحذف البيانات
+- Idempotent
+- عادة لا يحتاج Body
+
+```csharp
+[HttpDelete("{id}")]
+public IActionResult DeleteUser(int id)
+{
+    _userService.Delete(id);
+    return NoContent();
+}
+```
+
+**PATCH:**
+
+- للتحديث الجزئي
+- يرسل فقط الخصائص المطلوب تحديثها
+
+### ما هو الـ API ولماذا نستخدمه؟
+
+**API (Application Programming Interface):** واجهة تسمح للتطبيقات بالتواصل مع بعضها البعض.
+
+**الفوائد:**
+
+- **Separation of Concerns:** فصل الـ Frontend عن الـ Backend
+- **Reusability:** يمكن استخدام نفس الـ API لعدة تطبيقات
+- **Scalability:** توسع أفضل
+- **Platform Independence:** يعمل مع أي منصة
+- **Mobile Support:** سهولة دعم التطبيقات المحمولة
+
+**أنواع الـ APIs:**
+
+- **REST API:** الأكثر شيوعاً
+- **GraphQL:** مرونة أكبر في الاستعلامات
+- **SOAP:** للأنظمة القديمة
+- **gRPC:** عالي الأداء
+
+### ما هو API Versioning؟
+
+**API Versioning:** آلية إدارة إصدارات مختلفة من الـ API لضمان عدم كسر التطبيقات الموجودة.
+
+**الطرق:**
+
+**1. URL Path Versioning:**
+
+```csharp
+[Route("api/v1/[controller]")]
+public class UsersV1Controller : ControllerBase { }
+
+[Route("api/v2/[controller]")]
+public class UsersV2Controller : ControllerBase { }
+```
+
+**2. Query Parameter:**
+
+```csharp
+[ApiVersion("1.0")]
+[ApiVersion("2.0")]
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IEnumerable<User>> Get() { }
+    [MapToApiVersion("1.0")]
+    public IActionResult GetV1() { }
 
-    [HttpGet("{id}")]
-    public ActionResult<User> Get(int id) { }
-
-    [HttpPost]
-    public ActionResult<User> Post([FromBody] User user) { }
-
-    [HttpPut("{id}")]
-    public IActionResult Put(int id, [FromBody] User user) { }
-
-    [HttpDelete("{id}")]
-    public IActionResult Delete(int id) { }
+    [HttpGet]
+    [MapToApiVersion("2.0")]
+    public IActionResult GetV2() { }
 }
 ```
 
----
-
-## 12. ما هو الـ API ولماذا نستخدمه؟
-
-**API (Application Programming Interface)** هو واجهة برمجية تسمح للتطبيقات بالتواصل.
-
-### المزايا:
-
-- فصل Frontend عن Backend
-- إعادة الاستخدام
-- المرونة في التطوير
-- دعم منصات متعددة
-- سهولة الصيانة
-
-### أنواع APIs:
-
-- **REST API**: الأكثر شيوعاً
-- **GraphQL**: استعلامات مرنة
-- **SOAP**: بروتوكول قديم
-- **gRPC**: عالي الأداء
-
----
-
-## 13. ما هو API Versioning؟
-
-**API Versioning** هو إدارة إصدارات مختلفة من الـ API للحفاظ على التوافق.
-
-### طرق Versioning:
-
-#### 1. URL Path:
+**3. Header Versioning:**
 
 ```csharp
-[Route("api/v1/[controller]")]
-[Route("api/v2/[controller]")]
-```
-
-#### 2. Query Parameter:
-
-```csharp
-[HttpGet]
-[MapToApiVersion("1.0")]
-public ActionResult GetV1() { }
-
-[HttpGet]
-[MapToApiVersion("2.0")]
-public ActionResult GetV2() { }
-```
-
-#### 3. Header:
-
-```csharp
-// Request Header: X-Version: 1.0
+// Header: api-version: 1.0
 services.AddApiVersioning(opt =>
 {
-    opt.ApiVersionReader = new HeaderApiVersionReader("X-Version");
+    opt.ApiVersionReader = new HeaderApiVersionReader("api-version");
 });
 ```
 
----
+### ما الفرق بين In-memory Caching و Distributed Caching؟
 
-## 14. ما الفرق بين In-memory Caching و Distributed Caching؟
+**In-memory Caching:**
 
-| In-Memory Caching | Distributed Caching |
-| ----------------- | ------------------- |
-| داخل التطبيق      | خارج التطبيق        |
-| سريع جداً         | أبطأ نسبياً         |
-| مؤقت              | دائم نسبياً         |
-| خادم واحد         | عدة خوادم           |
-
-### In-Memory Caching:
+- يخزن البيانات في ذاكرة الخادم المحلي
+- سريع جداً
+- يفقد البيانات عند إعادة تشغيل التطبيق
+- مناسب للتطبيقات ذات الخادم الواحد
 
 ```csharp
 services.AddMemoryCache();
@@ -1031,24 +1238,25 @@ public class HomeController : Controller
 {
     private readonly IMemoryCache _cache;
 
-    public HomeController(IMemoryCache cache)
-    {
-        _cache = cache;
-    }
-
     public IActionResult Index()
     {
-        if (!_cache.TryGetValue("data", out string cachedData))
+        var cacheKey = "users_list";
+        if (!_cache.TryGetValue(cacheKey, out List<User> users))
         {
-            cachedData = GetDataFromDatabase();
-            _cache.Set("data", cachedData, TimeSpan.FromMinutes(30));
+            users = _userService.GetAll();
+            _cache.Set(cacheKey, users, TimeSpan.FromMinutes(30));
         }
-        return View(cachedData);
+        return View(users);
     }
 }
 ```
 
-### Distributed Caching (Redis):
+**Distributed Caching:**
+
+- يخزن البيانات في نظام خارجي (Redis, SQL Server)
+- أبطأ من In-memory لكن مشترك بين الخوادم
+- يبقى موجود عند إعادة تشغيل التطبيق
+- مناسب للتطبيقات الموزعة
 
 ```csharp
 services.AddStackExchangeRedisCache(options =>
@@ -1056,34 +1264,621 @@ services.AddStackExchangeRedisCache(options =>
     options.Configuration = "localhost:6379";
 });
 
-private readonly IDistributedCache _distributedCache;
-
-public async Task<string> GetDataAsync()
+public class HomeController : Controller
 {
-    var cachedData = await _distributedCache.GetStringAsync("key");
-    if (cachedData == null)
+    private readonly IDistributedCache _cache;
+
+    public async Task<IActionResult> Index()
     {
-        cachedData = GetDataFromDatabase();
-        await _distributedCache.SetStringAsync("key", cachedData,
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
-            });
+        var cacheKey = "users_list";
+        var cachedUsers = await _cache.GetStringAsync(cacheKey);
+
+        List<User> users;
+        if (cachedUsers == null)
+        {
+            users = _userService.GetAll();
+            var serializedUsers = JsonSerializer.Serialize(users);
+            await _cache.SetStringAsync(cacheKey, serializedUsers,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                });
+        }
+        else
+        {
+            users = JsonSerializer.Deserialize<List<User>>(cachedUsers);
+        }
+
+        return View(users);
     }
-    return cachedData;
 }
 ```
 
+### ما هو Repository Pattern وما علاقة Unit of Work به؟
+
+**Repository Pattern** هو نمط تصميم يوفر طبقة تجريد بين منطق العمل وطبقة الوصول للبيانات. يسمح بتنظيم وإدارة العمليات على البيانات بشكل منفصل عن قاعدة البيانات المحددة.
+
+**فوائد Repository Pattern:**
+- فصل منطق العمل عن طبقة البيانات
+- سهولة اختبار الوحدة
+- قابلية الصيانة والتوسعة
+- إمكانية تغيير قاعدة البيانات دون تأثير على منطق العمل
+
+**Unit of Work** يعمل مع Repository Pattern لإدارة المعاملات وضمان الاتساق في البيانات. يحتفظ بقائمة من الكائنات المتأثرة ويدير كتابة التغييرات وحل مشاكل التزامن.
+
+```csharp
+public interface IUnitOfWork
+{
+    IUserRepository Users { get; }
+    IOrderRepository Orders { get; }
+    Task<int> SaveChangesAsync();
+}
+```
+
+## Dependency Injection
+
+### كيف أعمل Dependency Injection وما الفرق بين AddSingleton وAddScoped وAddTransient؟
+
+**Dependency Injection** هو نمط تصميم يحقق Inversion of Control من خلال حقن التبعيات بدلاً من إنشائها داخل الكلاس.
+
+**أنواع دورة الحياة في DI:**
+
+- **AddTransient**: ينشئ instance جديد في كل مرة يطلب
+- **AddScoped**: ينشئ instance واحد لكل HTTP request
+- **AddSingleton**: ينشئ instance واحد فقط طوال دورة حياة التطبيق
+
+```csharp
+services.AddTransient<IEmailService, EmailService>();
+services.AddScoped<IUserService, UserService>();
+services.AddSingleton<ICacheService, CacheService>();
+```
+
+## Architecture Patterns
+
+### ما هو Clean Architecture وما الفرق بين N-Tier وOnion Architecture؟
+
+**Clean Architecture** هو نهج معماري يركز على فصل الاهتمامات وجعل النظام قابل للاختبار والصيانة.
+
+**الفروق:**
+
+**N-Tier Architecture:**
+- طبقات أفقية (Presentation, Business, Data)
+- التبعيات تتجه من أعلى لأسفل
+- أقل مرونة في التغيير
+
+**Onion Architecture:**
+- طبقات دائرية مع Domain في المركز
+- التبعيات تتجه للداخل
+- مرونة أكبر وقابلية اختبار أفضل
+
+**Clean Architecture:**
+- يجمع مزايا الأنماط السابقة
+- فصل واضح للاهتمامات
+- استقلالية تامة للطبقات الداخلية
+
+### كيف أتعامل مع Service Registration؟
+
+```csharp
+public void ConfigureServices(IServiceCollection services)
+{
+    // Repository Pattern
+    services.AddScoped<IUserRepository, UserRepository>();
+    
+    // Business Services
+    services.AddScoped<IUserService, UserService>();
+    
+    // AutoMapper
+    services.AddAutoMapper(typeof(MappingProfile));
+    
+    // Database Context
+    services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(connectionString));
+}
+```
+
+## Advanced Patterns
+
+### ما هو DDD (Domain-Driven Design)؟
+
+**Domain-Driven Design** هو نهج لتطوير البرمجيات يركز على النمذجة المعقدة للمجال ووضع منطق المجال في قلب التطبيق.
+
+**المكونات الأساسية:**
+- **Entities**: كائنات لها هوية فريدة
+- **Value Objects**: كائنات بدون هوية، تعرف بقيمها
+- **Aggregates**: مجموعة من الكائنات المترابطة
+- **Domain Services**: خدمات تحتوي على منطق المجال
+- **Repositories**: للوصول للبيانات
+
+### ما هو CQRS وما فائدته؟
+
+**CQRS (Command Query Responsibility Segregation)** هو نمط يفصل بين عمليات القراءة والكتابة.
+
+**الفوائد:**
+- تحسين الأداء
+- قابلية التوسع المستقلة
+- مرونة في النمذجة
+- أمان أفضل
+
+```csharp
+// Command
+public class CreateUserCommand
+{
+    public string Name { get; set; }
+    public string Email { get; set; }
+}
+
+// Query
+public class GetUserQuery
+{
+    public int UserId { get; set; }
+}
+```
+
+### ما هو RabbitMQ؟
+
+**RabbitMQ** هو message broker يسمح للتطبيقات بالتواصل من خلال تمرير الرسائل.
+
+**الاستخدامات:**
+- التواصل غير المتزامن بين الخدمات
+- معالجة المهام في الخلفية
+- فصل المكونات المترابطة
+- ضمان تسليم الرسائل
+
+### ما هو Replication وما فائدته؟
+
+**Database Replication** هو عملية نسخ البيانات من خادم قاعدة بيانات إلى خوادم أخرى.
+
+**الأنواع:**
+- **Master-Slave**: خادم رئيسي للكتابة وخوادم فرعية للقراءة
+- **Master-Master**: عدة خوادم يمكنها الكتابة والقراءة
+
+**الفوائد:**
+- تحسين الأداء
+- توفير النسخ الاحتياطية
+- توزيع الحمولة
+- زيادة الموثوقية
+
+## OOP Concepts
+
+### ما الفرق بين Abstract Class وInterface؟
+
+| Abstract Class | Interface |
+|----------------|-----------|
+| يمكن أن يحتوي على implementation | فقط تعريفات (حتى C# 8.0) |
+| يدعم constructors | لا يدعم constructors |
+| يمكن أن يحتوي على fields | فقط properties وmethods |
+| وراثة واحدة فقط | يمكن تطبيق متعدد |
+| يستخدم extends | يستخدم implements |
+
+### ما الفرق بين Overloading وOverriding؟
+
+**Overloading (Compile-time Polymorphism):**
+- نفس اسم الدالة مع parameters مختلفة
+- يحدث في وقت الترجمة
+- في نفس الكلاس أو كلاسات مختلفة
+
+**Overriding (Runtime Polymorphism):**
+- إعادة تعريف دالة في الكلاس الفرعي
+- يحدث في وقت التشغيل
+- يتطلب virtual/override
+
+```csharp
+// Overloading
+public void Calculate(int a, int b) { }
+public void Calculate(double a, double b) { }
+
+// Overriding
+public virtual void Display() { }
+public override void Display() { }
+```
+
+### ما هو Constructor وما فائدته وما الفرق بينه وبين Destructor؟
+
+**Constructor:**
+- دالة خاصة تستدعى عند إنشاء كائن
+- نفس اسم الكلاس
+- لا يرجع قيمة
+- يستخدم لتهيئة الكائن
+
+**Destructor (Finalizer):**
+- يستدعى قبل حذف الكائن من الذاكرة
+- يبدأ بـ ~ متبوعاً باسم الكلاس
+- لا يمكن استدعاؤه مباشرة
+- يدار من قبل Garbage Collector
+
+### ما الفرق بين Static Class, Sealed Class, Abstract Class؟
+
+**Static Class:**
+- لا يمكن إنشاء instance منه
+- جميع الأعضاء static
+- لا يمكن وراثته
+- يحمل في الذاكرة طوال دورة حياة التطبيق
+
+**Sealed Class:**
+- يمكن إنشاء instance منه
+- لا يمكن وراثته
+- جميع أعضائه عاديين
+
+**Abstract Class:**
+- لا يمكن إنشاء instance منه مباشرة
+- يجب وراثته
+- يمكن أن يحتوي على abstract methods
+
+### ما الفرق بين Static Method وStatic Variable؟
+
+**Static Method:**
+- ينتمي للكلاس وليس للكائن
+- لا يمكن الوصول لأعضاء الكائن العاديين
+- يستدعى باستخدام اسم الكلاس
+
+**Static Variable:**
+- مشتركة بين جميع كائنات الكلاس
+- تهيأ مرة واحدة فقط
+- تبقى في الذاكرة طوال دورة حياة التطبيق
+
+### ما هو Encapsulation وكيف أحققه؟
+
+**Encapsulation** هو إخفاء التفاصيل الداخلية للكائن وتوفير واجهة محددة للتفاعل معه.
+
+**كيفية تحقيقه:**
+- استخدام Access Modifiers
+- استخدام Properties بدلاً من Fields
+- إخفاء Implementation Details
+
+```csharp
+public class BankAccount
+{
+    private decimal _balance;
+    
+    public decimal Balance 
+    { 
+        get { return _balance; }
+        private set { _balance = value; }
+    }
+    
+    public void Deposit(decimal amount)
+    {
+        if (amount > 0)
+            _balance += amount;
+    }
+}
+```
+
+### ما الفرق بين Property وField وكيف تحقق Encapsulation؟
+
+**Field:**
+- متغير عادي في الكلاس
+- وصول مباشر للقيمة
+- لا يوفر تحكم في العمليات
+
+**Property:**
+- واجهة للوصول للـ Field
+- يحتوي على Get/Set accessors
+- يوفر تحكم وvalidation
+
+```csharp
+// Field
+private string _name;
+
+// Property
+public string Name
+{
+    get { return _name; }
+    set 
+    { 
+        if (!string.IsNullOrEmpty(value))
+            _name = value; 
+    }
+}
+```
+
+### ما الفرق بين Struct وClass وInterface؟
+
+| Feature | Struct | Class | Interface |
+|---------|--------|-------|-----------|
+| Type | Value Type | Reference Type | Contract |
+| Inheritance | لا يدعم | يدعم | يدعم تعدد |
+| Default Constructor | تلقائي | يمكن تخصيصه | لا يوجد |
+| Null Value | لا يمكن | يمكن | N/A |
+| Performance | أسرع | أبطأ نسبياً | N/A |
+
+### ما هو Polymorphism (Static vs Dynamic)؟
+
+**Static Polymorphism (Compile-time):**
+- Method Overloading
+- Operator Overloading
+- يحدد في وقت الترجمة
+
+**Dynamic Polymorphism (Runtime):**
+- Method Overriding
+- Virtual Functions
+- يحدد في وقت التشغيل
+
+```csharp
+// Static Polymorphism
+public class Calculator
+{
+    public int Add(int a, int b) { return a + b; }
+    public double Add(double a, double b) { return a + b; }
+}
+
+// Dynamic Polymorphism
+public virtual void Draw() { }
+public override void Draw() { }
+```
+
+### ما هو الفرق بين Composition وInheritance ولماذا نفضل الأولى؟
+
+**Inheritance (Is-A Relationship):**
+- علاقة "هو من نوع"
+- وراثة السلوك والخصائص
+- ترابط قوي
+
+**Composition (Has-A Relationship):**
+- علاقة "يحتوي على"
+- تجميع كائنات مختلفة
+- ترابط ضعيف
+
+**لماذا نفضل Composition:**
+- مرونة أكبر
+- سهولة التغيير
+- تجنب مشاكل الوراثة المتعددة
+- اختبار أسهل
+
+```csharp
+// Inheritance
+public class Car : Vehicle { }
+
+// Composition
+public class Car
+{
+    private Engine _engine;
+    private Wheel[] _wheels;
+}
+```
+
+### ما هو Access Modifiers؟
+
+**أنواع Access Modifiers في C#:**
+
+- **public**: الوصول من أي مكان
+- **private**: الوصول من نفس الكلاس فقط
+- **protected**: الوصول من الكلاس والكلاسات المشتقة
+- **internal**: الوصول من نفس Assembly
+- **protected internal**: الوصول من Assembly أو الكلاسات المشتقة
+- **private protected**: الوصول من الكلاسات المشتقة في نفس Assembly
+
+### هل كل أعضاء Class يمكن توريثهم؟
+
+**لا، ليس جميع الأعضاء قابلون للوراثة:**
+
+**يمكن توريثها:**
+- public members
+- protected members
+- protected internal members
+
+**لا يمكن توريثها:**
+- private members
+- Constructors
+- Destructors
+- static constructors
+
+### ما هو الفرق بين Value Type وReference Type؟
+
+**Value Type:**
+- يخزن في Stack
+- نسخ مباشر للقيمة
+- أمثلة: int, double, struct, enum
+- لا يمكن أن يكون null (إلا nullable types)
+
+**Reference Type:**
+- يخزن في Heap
+- يحتوي على مرجع للقيمة
+- أمثلة: class, interface, delegate, string
+- يمكن أن يكون null
+
+### ما الفرق بين Hashtable وDictionary؟
+
+| Hashtable | Dictionary |
+|-----------|------------|
+| غير Generic | Generic |
+| أبطأ نسبياً | أسرع |
+| Thread-safe للقراءة | غير Thread-safe |
+| يقبل null values | لا يقبل null keys |
+| Boxing/Unboxing | No Boxing/Unboxing |
+
+### ما الفرق بين var وdynamic؟
+
+**var:**
+- Static typing
+- يحدد النوع في وقت الترجمة
+- يجب تهيئته عند التصريح
+- أداء أفضل
+
+**dynamic:**
+- Dynamic typing
+- يحدد النوع في وقت التشغيل
+- يمكن تغيير النوع
+- أداء أبطأ
+
+```csharp
+var x = 10; // int
+dynamic y = 10; // يمكن تغييره لاحقاً
+y = "Hello"; // صالح
+```
+
+### ما هو Boxing وUnboxing؟
+
+**Boxing:**
+- تحويل Value Type إلى Reference Type
+- يحدث تلقائياً
+- يستهلك ذاكرة إضافية
+
+**Unboxing:**
+- تحويل Reference Type إلى Value Type
+- يحتاج cast صريح
+- قد يرمي exception
+
+```csharp
+// Boxing
+int i = 10;
+object obj = i; // Boxing
+
+// Unboxing
+int j = (int)obj; // Unboxing
+```
+
+### ما الفرق بين Early Binding وLate Binding؟
+
+**Early Binding (Static Binding):**
+- يحدد في وقت الترجمة
+- أداء أفضل
+- أمان أكبر في النوع
+- مثال: Method Overloading
+
+**Late Binding (Dynamic Binding):**
+- يحدد في وقت التشغيل
+- مرونة أكبر
+- أداء أبطأ
+- مثال: Method Overriding, Reflection
+
+### ما هو Dispose وما الفرق بينه وبين Finalize؟
+
+**Dispose:**
+- يستدعى يدوياً
+- لتنظيف الموارد المدارة وغير المدارة
+- جزء من IDisposable interface
+- سرعة في التنظيف
+
+**Finalize:**
+- يستدعى من Garbage Collector
+- لتنظيف الموارد غير المدارة فقط
+- بطيء ولا يمكن السيطرة على توقيته
+- يؤخر حذف الكائن
+
+```csharp
+public class ResourceManager : IDisposable
+{
+    private bool _disposed = false;
+    
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // تنظيف الموارد المدارة
+            }
+            // تنظيف الموارد غير المدارة
+            _disposed = true;
+        }
+    }
+    
+    ~ResourceManager()
+    {
+        Dispose(false);
+    }
+}
+```
+
+### ما هو Method Signature؟
+
+**Method Signature** يتكون من:
+- اسم الدالة
+- عدد ونوع المعاملات
+- ترتيب المعاملات
+
+**لا يشمل:**
+- نوع الإرجاع
+- أسماء المعاملات
+- Access modifiers
+
+```csharp
+// نفس الـ Signature
+public int Calculate(int a, int b)
+public void Calculate(int x, int y) // خطأ - نفس الـ signature
+
+// Signatures مختلفة
+public int Calculate(int a, int b)
+public int Calculate(double a, double b) // صحيح
+```
+
+### ما هي مشاكل الوراثة المفرطة؟
+
+**مشاكل الوراثة المفرطة:**
+- تعقيد في التصميم
+- صعوبة في الصيانة
+- ترابط قوي بين الكلاسات
+- صعوبة في إجراء التغييرات
+- مشاكل في الأداء
+- Diamond Problem في الوراثة المتعددة
+
+**الحلول:**
+- استخدام Composition
+- تطبيق SOLID principles
+- تقليل عمق الوراثة
+- استخدام Interfaces
+
+### ما الفرق بين strongly typed وloosely typed في C#؟
+
+**C# هي strongly typed language:**
+- يجب تحديد نوع البيانات
+- فحص الأنواع في وقت الترجمة
+- لا يمكن تحويل الأنواع تلقائياً إلا في حالات محددة
+- أمان أكبر وأخطاء أقل
+
+```csharp
+// Strongly typed
+int number = 10;
+string text = "Hello";
+// number = text; // خطأ في وقت الترجمة
+
+// استخدام dynamic للحصول على loose typing
+dynamic value = 10;
+value = "Hello"; // صالح
+```
+
+### ما ترتيب تنفيذ الكود عند وجود وراثة بين Parent وChild؟
+
+**ترتيب التنفيذ:**
+
+1. **عند إنشاء كائن Child:**
+   - Static constructor للـ Parent (إن وجد)
+   - Static constructor للـ Child (إن وجد)
+   - Instance constructor للـ Parent
+   - Instance constructor للـ Child
+
+2. **عند استدعاء method:**
+   - يبحث أولاً في Child class
+   - إذا لم يجد، يبحث في Parent class
+   - إذا كان virtual/override، يستدعى من Child
+
+```csharp
+public class Parent
+{
+    static Parent() { Console.WriteLine("Parent Static Constructor"); }
+    public Parent() { Console.WriteLine("Parent Constructor"); }
+    public virtual void Display() { Console.WriteLine("Parent Display"); }
+}
+
+public class Child : Parent
+{
+    static Child() { Console.WriteLine("Child Static Constructor"); }
+    public Child() { Console.WriteLine("Child Constructor"); }
+    public override void Display() { Console.WriteLine("Child Display"); }
+}
+
+// Output عند إنشاء Child:
+// Parent Static Constructor
+// Child Static Constructor  
+// Parent Constructor
+// Child Constructor
+```
+
 ---
-
-## خلاصة
-
-هذه أهم المفاهيم في ASP.NET Core/MVC التي يجب على كل مطور معرفتها. التطبيق العملي والممارسة هما المفتاح لإتقان هذه التقنيات.
-
-**نصائح مهمة:**
-
-- استخدم Dependency Injection بشكل صحيح
-- اهتم بـ Security والـ Authentication
-- طبق مبادئ REST في APIs
-- استخدم Caching لتحسين الأداء
-- اتبع أفضل الممارسات في التطوير
